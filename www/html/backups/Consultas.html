@@ -1,0 +1,36 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title> Extraindo dados de um Banco de dados</title>
+</head>
+<body>
+<?php
+//Conexão com o banco de dados
+mysql_connect("localhost","adm","password")or die (mysql_error());
+
+//Seleciona o Banco de Dados
+mysql_select_db("temperatura")or die(mysql_error());
+
+//query SQL
+$strSQL = "SELECT * FROM dados2 where (tdate='2016-09-25')and (ttime > '14:35:00')";
+
+//Executa a query(o recordset $rs contém o resultado da query)
+$rs = mysql_query($strSQL);
+
+//Loop pelo recordset $rs
+//Cada linha vai para um array ($row)usando mysql_fetch_array
+while ($row = mysql_fetch_array($rs)){
+
+// Escreve o valor da coluna Firstname(que está no array $row)
+echo $row['temp']. "<br />";
+
+}
+//Encerra a conexão
+mysql_close();
+
+?>
+</body>
+
+</html>
+
