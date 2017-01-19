@@ -1,0 +1,168 @@
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DHT.h>
+#include "EmonLib.h"
+
+
+#define ONE_WIRE_BUS 10 // pino Temperatura
+#define dht_dpin 9      // pino Umidade
+
+//Pinos sensor de agua
+int atuador = 8; //Pino ligado ao atuador
+int sensor = 5;  //Pino ligado a placa de agua
+int acionamento;  //Variavel para guardar valor do sensor
+
+const int CT1 = 1; 
+const int CT2 = 1;      // Set to 0 to disable 
+const int CT3 = 1;
+const int CT4 = 1;
+
+EnergyMonitor ct1, ct2, ct3, ct4;
+
+int power1, power2, power3, power4;
+
+
+
+DHT dht(9,DHT22);
+
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors(&oneWire);
+DeviceAddress AD0 = { 0x28, 0x41, 0xC2, 0x1E, 0x06, 0x00, 0x00, 0x01 };
+DeviceAddress AD1 = { 0x28, 0xDF, 0xD8, 0xA7, 0x05, 0x00, 0x00, 0x84 };
+
+
+void setup(void)
+{
+  // start serial port
+  Serial.begin(9600);
+  //delay(1000); //Tirei um 0
+
+  // Inicializa o DHT22
+  dht.begin();
+  
+  // Start up the library
+  sensors.begin();
+  // set the resolution to 10 bit (good enough?)
+  sensors.setResolution(AD0 , 10);
+  sensors.setResolution(AD1 , 10);
+
+  if (CT1) ct1.current(1, 111.1);            // Setup emonTX CT channel (channel, calibration)
+  if (CT2) ct2.current(2, 111.1);           // Calibration factor = CT ratio / burden resistance
+  if (CT3) ct3.current(3, 111.1); 
+  if (CT4) ct4.current(4, 111.1);
+  
+  //Metodo sensor de agua
+  pinMode(atuador, OUTPUT); //Define pino como saida
+  pinMode(sensor, INPUT);   //Define pino sensor como entrada
+}
+
+void printTemperature(DeviceAddress deviceAddress)
+{
+  int tempC = sensors.getTempC(deviceAddress);
+  
+    Serial.print(tempC);
+}
+
+
+void loop(void)
+{ 
+ // delay(1000);
+  
+  sensors.requestTemperatures();
+  Serial.print("[AD0] | Temperatura:");
+  printTemperature(AD0);
+  //Serial.print(" Celsius");
+  //Serial.print("\n");
+  
+  Serial.print("[AD1] | Temperatura:");
+  printTemperature(AD1);
+  //Serial.print(" Celsius");
+  //Serial.print("\n");
+ 
+  // delay(100);
+  
+  // Leitura umidade
+  float h = dht.readHumidity();
+  //int i;
+
+  Serial.print("[AD4] | Umidade:    ");
+  //Serial.println(h);
+  //i = (int) h;
+  Serial.print(h);
+  //Serial.print("%");
+  //Serial.print("\n");
+
+  //delay(100);
+  
+  //Calcula a corrente
+  //double Irms1 = ct1.calcIrms(1480);  // Mede a corrente 1 RMS.
+  //double Irms2 = ct2.calcIrms(1480);  // Mede a corrente 2 RMS.
+  //double Potencia = Irms * 127.0;    // Calcula a potência aparente (supondo que a rede elétrica esteja em 127 V).
+  
+  //Mostra o valor da corrente no serial monitor
+
+  if (CT1) {
+    double power1 = ct1.calcIrms(1480);            //ct.calcIrms(number of wavelengths sample)*AC RMS voltage
+    Serial.print("[AD5] | Potencia:   ");
+    Serial.print(power1 * 127);
+    //Serial.print("]");
+    //Serial.print("\n");
+  }
+  
+  if (CT2) {
+    double power2 = ct2.calcIrms(1480);
+    //Serial.print(" ");
+    Serial.print("[AD6] | Potencia:   "); 
+    Serial.print(power2 * 127);
+    //Serial.print("]");
+    //Serial.print("\n");
+  } 
+
+  if (CT3) {
+    double power3 = ct3.calcIrms(1480);
+    //Serial.print(" ");
+    Serial.print("[AD7] | Potencia:   "); 
+    Serial.print(power3 * 127);
+    //Serial.print("]");
+    //Serial.print("\n");
+  } 
+  
+   if (CT4) {
+    double power4 = ct4.calcIrms(1480);
+    //Serial.print(" ");
+    Serial.print("[AD8] | Potencia:   "); 
+    Serial.print(power4 * 127);
+    //Serial.print("\n");
+  } 
+
+  //delay(100);
+  
+  
+  acionamento = digitalRead(sensor); //Le o valor do sensor de agua
+    if (acionamento == LOW)  //Se nao tem agua
+    {
+      digitalWrite(atuador, LOW);
+
+      Serial.print("[AD3] | D.Agua:     ");
+      Serial.print("0");
+      //Serial.print("]");
+      //Serial.print("\n");
+    }
+    else  //Caso tenha agua, aciona o atuador
+      {
+        digitalWrite(atuador, HIGH);
+
+        Serial.print("[AD3] | D.Agua:     ");
+        Serial.print("1");
+        //Serial.print("\n");
+      }
+
+       delay(30000);
+  
+
+}
+
+
